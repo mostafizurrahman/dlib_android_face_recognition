@@ -10,6 +10,8 @@ import android.hardware.Camera
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.util.Log
 import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
@@ -62,6 +64,14 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
         // private model directory, and models.json file
         modelDir = getDir("models", MODE_PRIVATE)
         modelsJson = File(getDir("models", MODE_PRIVATE), "models.json")
+        val extStore = Environment.getExternalStorageDirectory().path.toString()
+
+        var net_path = extStore + "/dlib_data_folder/dlib_face_recognition_resnet_model_v1.dat"
+        if ( File(net_path.toString()).exists()){
+            Log.i("SD", "______EXISTS_______")
+        }
+        
+
 
         // set face detection listener
         cameraPreview.faceListener = this
