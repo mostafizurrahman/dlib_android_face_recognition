@@ -406,7 +406,7 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
         const val request_camera  = 100
         const val request_storage = 200
         const val model_id = "CameraActivity.model_id"
-        const val json_url = "https://github.com/Luca96/dlib-minified-models/raw/master/face_landmarks/models.json"
+        const val json_url = "https://raw.githubusercontent.com/mostafizurrahman/dlib_android_face_recognition/master/dlib_models.json"
     }
 }
 

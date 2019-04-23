@@ -45,6 +45,6 @@
     "hash": "73fde5e05226548677a050913eed4e04",
     "version": "1.0",
     "id": "5",
-    "file": "shape_predictor_68_face_landmarks.dat"
+    "file": "dlib_face_recognition_resnet_model_v1.dat"
   }
 ]
