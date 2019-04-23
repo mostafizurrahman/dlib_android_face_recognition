@@ -66,7 +66,7 @@ class Extractor(activity: Activity, val destination: File,
                 writer.close()
                 reader.close()
 
-                Log.d(tag, "File extacted at ${destination.path}")
+                Log.d(tag, "File extracted at ${destination.path}")
 
                 Looper.prepare()
                 onSuccess(destination)

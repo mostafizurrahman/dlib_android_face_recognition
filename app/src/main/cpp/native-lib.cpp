@@ -21,7 +21,7 @@
 #include <dlib/image_processing/generic_image.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/opencv/cv_image.h>
-
+#include <dlib/dnn.h>
 #define LOG_TAG "native-lib"
 #define LOGD(...) \
   ((void)__android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
