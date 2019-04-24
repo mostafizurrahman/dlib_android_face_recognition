@@ -53,9 +53,9 @@ class Model(val url: String, val name: String, val hash: String,
     }
 
     /** try to load the model, returns true on success */
-    private fun loadFrom(dir: File): Boolean {
+    private fun loadFrom(landmark: String, net:String): Boolean {
         return try {
-            Native.loadModel(File(dir, file).path)
+            Native.loadModel(landmark, net)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -64,8 +64,8 @@ class Model(val url: String, val name: String, val hash: String,
     }
 
     /** load the model asynchronously */
-    fun loadAsync(dir: File) = async {
-        loadFrom(dir)
+    fun loadAsync(landmark: String, net: String) = async {
+        loadFrom(landmark, net)
     }
 
     /** check if the downloaded and then extracted model is corrupted */

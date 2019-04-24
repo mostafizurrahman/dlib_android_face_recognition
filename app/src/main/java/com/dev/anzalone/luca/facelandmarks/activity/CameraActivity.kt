@@ -64,14 +64,6 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
         // private model directory, and models.json file
         modelDir = getDir("models", MODE_PRIVATE)
         modelsJson = File(getDir("models", MODE_PRIVATE), "models.json")
-        val extStore = Environment.getExternalStorageDirectory().path.toString()
-
-        var net_path = extStore + "/dlib_data_folder/dlib_face_recognition_resnet_model_v1.dat"
-        if ( File(net_path.toString()).exists()){
-            Log.i("SD", "______EXISTS_______")
-        }
-        
-
 
         // set face detection listener
         cameraPreview.faceListener = this
@@ -264,7 +256,22 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
 
     /** load a model from dlib */
     private fun loadModel(id: Int): Boolean {
+
+
+        val extStore = Environment.getExternalStorageDirectory().path.toString()
+
+        var net_path = extStore + "/dlib_data_folder/dlib_face_recognition_resnet_model_v1.dat"
+        if ( File(net_path).exists()){
+            Log.i("SD", "______EXISTS_______")
+        }
+
+        var land_path = extStore + "/dlib_data_folder/shape_predictor_5_face_landmarks.dat"
+        if ( File(land_path).exists()){
+            Log.i("SD", "______EXISTS_______")
+        }
+
         val model  = models[id] ?: return true
+//        return model.loadAsync(land_path, net_path) ?: false == true
 
         if (model.exists(modelDir)) {
             // try loading...
@@ -287,7 +294,7 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
                     detectorActor.send(Pair(null, null))
 
                     lock.withLock {
-                        val loaded = model.loadAsync(modelDir).await()
+                        val loaded = model.loadAsync(land_path, net_path).await()
 
                         currentModelId = when (loaded) {
                             true -> { imageTaken = false; id }

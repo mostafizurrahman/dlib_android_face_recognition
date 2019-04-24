@@ -38,9 +38,59 @@
 #define MAX_FRAME_COUNT 5
 
 using namespace std;
+using namespace dlib;
+// ----------------------------------------------------------------------------------------
+
+// The next bit of code defines a ResNet network.  It's basically copied
+// and pasted from the dnn_imagenet_ex.cpp example, except we replaced the loss
+// layer with loss_metric and made the network somewhat smaller.  Go read the introductory
+// dlib DNN examples to learn what all this stuff means.
+//
+// Also, the dnn_metric_learning_on_images_ex.cpp example shows how to train this network.
+// The dlib_face_recognition_resnet_model_v1 model used by this example was trained using
+// essentially the code shown in dnn_metric_learning_on_images_ex.cpp except the
+// mini-batches were made larger (35x15 instead of 5x5), the iterations without progress
+// was set to 10000, and the training dataset consisted of about 3 million images instead of
+// 55.  Also, the input layer was locked to images of size 150.
+template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
+using residual = add_prev1<block<N,BN,1,tag1<SUBNET>>>;
+
+template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
+using residual_down = add_prev2<avg_pool<2,2,2,2,skip1<tag2<block<N,BN,2,tag1<SUBNET>>>>>>;
+
+template <int N, template <typename> class BN, int stride, typename SUBNET>
+using block  = BN<con<N,3,3,1,1,relu<BN<con<N,3,3,stride,stride,SUBNET>>>>>;
+
+template <int N, typename SUBNET> using ares      = relu<residual<block,N,affine,SUBNET>>;
+template <int N, typename SUBNET> using ares_down = relu<residual_down<block,N,affine,SUBNET>>;
+
+template <typename SUBNET> using alevel0 = ares_down<256,SUBNET>;
+template <typename SUBNET> using alevel1 = ares<256,ares<256,ares_down<256,SUBNET>>>;
+template <typename SUBNET> using alevel2 = ares<128,ares<128,ares_down<128,SUBNET>>>;
+template <typename SUBNET> using alevel3 = ares<64,ares<64,ares<64,ares_down<64,SUBNET>>>>;
+template <typename SUBNET> using alevel4 = ares<32,ares<32,ares<32,SUBNET>>>;
+
+using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
+                            alevel0<
+                            alevel1<
+                            alevel2<
+                            alevel3<
+                            alevel4<
+                            max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
+                            input_rgb_image_sized<150>
+                            >>>>>>>>>>>>;
+
+// ----------------------------------------------------------------------------------------
+
+dlib::vector<matrix<rgb_pixel>> jitter_image(
+    const matrix<rgb_pixel>& img
+);
+
+// ----------------------------------------------------------------------------------------
 
 // global variables:
-dlib::shape_predictor shape_predictor;
+dlib::shape_predictor  predictor;
+anet_type face_net;
 std::mutex _mutex;
 int imageFormat = NV21;
 
@@ -52,8 +102,8 @@ namespace LK {
     int frameCount = 0;
     bool isTracking = false;
     cv::Mat prev_img;
-    vector<cv::Point2f> prev_pts;
-    vector<cv::Point2f> next_pts;
+    std::vector<cv::Point2f> prev_pts;
+    std::vector<cv::Point2f> next_pts;
     cv::TermCriteria criteria(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, 25, 0.01);
     cv::Size ROI(20, 20);
 
@@ -77,10 +127,10 @@ namespace LK {
     }
 
     /** tracking points in the next captured frame */
-    vector<cv::Point2f> track(cv::Mat &frame) {
-        vector<uchar> status;
-        vector<float> err;
-        vector<cv::Point2f> tracked;
+    std::vector<cv::Point2f> track(cv::Mat &frame) {
+        std::vector<uchar> status;
+        std::vector<float> err;
+        std::vector<cv::Point2f> tracked;
 
         // get the new points from the old one
         calcOpticalFlowPyrLK(prev_img, frame, prev_pts, next_pts, status, err,
@@ -113,19 +163,21 @@ namespace LK {
 
 extern "C"
 JNIEXPORT void JNICALL
-JNI_METHOD(loadModel)(JNIEnv* env, jclass, jstring detectorPath) {
+JNI_METHOD(loadModel)(JNIEnv* env, jclass, jstring detectorPath, jstring netPath) {
     try {
         const char *path = env->GetStringUTFChars(detectorPath, JNI_FALSE);
-
+        const char *net = env->GetStringUTFChars(netPath, JNI_FALSE);
         _mutex.lock();
             // cause the later initialization of the tracking
             LK::isTracking = false;
 
             // load the shape predictor
-            dlib::deserialize(path) >> shape_predictor;
+            dlib::deserialize(path) >> predictor;
+            dlib::deserialize(net) >> face_net;
         _mutex.unlock();
 
         env->ReleaseStringUTFChars(detectorPath, path); //free mem
+        env->ReleaseStringUTFChars(netPath, net); //free mem
         LOGD("JNI: model loaded");
 
     } catch (dlib::serialization_error &e) {
@@ -196,7 +248,7 @@ JNI_METHOD(detectLandmarks)(JNIEnv* env, jclass, jbyteArray yuvFrame, jint rotat
         // detect landmark points
         _mutex.lock();
         dlib::rectangle region(left, top, right, bottom);
-        dlib::full_object_detection points = shape_predictor(image, region);
+        dlib::full_object_detection points = predictor(image, region);
         _mutex.unlock();
 
         // result
