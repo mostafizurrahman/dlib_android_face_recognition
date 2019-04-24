@@ -288,12 +288,7 @@ JNI_METHOD(detectLandmarks)(JNIEnv* env, jclass, jbyteArray yuvFrame, jint rotat
         std::vector<dlib::matrix<float,0,1>> descriptors = face_net(faces);
 
 
-        for(int i = 0; i < 5; i++){
-            LOGD("____________ %f __________ %f" , face_descriptors[5](i,0) , descriptors[0](i,0));
-        }
-
-
-        if (dlib::length(face_descriptors[5] - descriptors[0]) < 0.6){
+        if (dlib::length(face_descriptors[5] - descriptors[0]) < 0.5){
             LOGD("____________ FACE RECOGNITION");
         }
         _mutex.unlock();
