@@ -63,6 +63,11 @@ class Model(val url: String, val name: String, val hash: String,
         }
     }
 
+    fun loadFaces(data:Array<FloatArray>){
+        Native.loadFace(data)
+    }
+
+
     /** load the model asynchronously */
     fun loadAsync(landmark: String, net: String) = async {
         loadFrom(landmark, net)

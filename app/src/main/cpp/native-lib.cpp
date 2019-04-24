@@ -90,6 +90,9 @@ dlib::vector<matrix<rgb_pixel>> jitter_image(
 
 // global variables:
 dlib::shape_predictor  predictor;
+dlib::matrix<float,0,1> descriptor;
+
+std::vector<dlib::matrix<float,0,1>> face_descriptors;
 anet_type face_net;
 std::mutex _mutex;
 int imageFormat = NV21;
@@ -206,6 +209,35 @@ JNI_METHOD(setImageFormat)(JNIEnv* env, jclass, jint format) {
     imageFormat = format;
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+JNI_METHOD(loadFace) (JNIEnv * env, jobject obj, jobjectArray myArray)
+{
+  int len1 = 16;
+  jfloatArray dim =  (jfloatArray)env->GetObjectArrayElement(myArray, 0);
+  int len2 = 128;
+
+
+
+  for(int i=0; i<len1; ++i){
+     jfloatArray oneDim = (jfloatArray)env->GetObjectArrayElement(myArray, i);
+     jfloat *element = env->GetFloatArrayElements(oneDim, 0);
+     dlib::matrix<float,0,1> fdata;
+     fdata.set_size(128, 1);
+
+     //allocate localArray[i] using len2
+     for(int j=0; j<len2; ++j) {
+        LOGD("____________ %f", element[j]);
+        fdata(j,0) =  element[j];
+     }
+     face_descriptors.push_back(fdata);
+
+     env->ReleaseFloatArrayElements( oneDim , (jfloat *)element, 0);
+  }
+  //TODO play with localArray, don't forget to release memory ;)
+}
+
+
 
 //--------------------------------------------------------------------------------------------------
 //-- LANDMARK DETECTION
@@ -249,6 +281,21 @@ JNI_METHOD(detectLandmarks)(JNIEnv* env, jclass, jbyteArray yuvFrame, jint rotat
         _mutex.lock();
         dlib::rectangle region(left, top, right, bottom);
         dlib::full_object_detection points = predictor(image, region);
+        std::vector<dlib::matrix<rgb_pixel>> faces;
+        dlib::matrix<rgb_pixel> face_chip;
+        dlib::extract_image_chip(image, get_face_chip_details(points,150,0.25), face_chip);
+        faces.push_back(move(face_chip));
+        std::vector<dlib::matrix<float,0,1>> descriptors = face_net(faces);
+
+
+        for(int i = 0; i < 5; i++){
+            LOGD("____________ %f __________ %f" , face_descriptors[5](i,0) , descriptors[0](i,0));
+        }
+
+
+        if (dlib::length(face_descriptors[5] - descriptors[0]) < 0.6){
+            LOGD("____________ FACE RECOGNITION");
+        }
         _mutex.unlock();
 
         // result

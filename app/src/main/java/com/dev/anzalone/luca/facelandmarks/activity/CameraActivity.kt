@@ -50,15 +50,46 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
     private var imageTaken = false
     private var modelsFetched = false
 
+    private  var savedData = Array(16, {FloatArray(128)})
+
     init {
         System.loadLibrary("native-lib")
     }
+
+    private fun loadFaceData(){
+        val extStore = Environment.getExternalStorageDirectory().path.toString()
+        var net_path = extStore + "/dlib_data_folder/face_data.txt"
+        var file = File(net_path)
+        if ( file.exists()){
+            Log.i("SD", "______EXISTS_______")
+            var face = 0
+            file.forEachLine {
+                println(it)
+
+                var array = it.split("_")
+                var index = 0
+
+                for (item in array) {
+                    // body of loop
+                    if (item.contains(".")) {
+                        val data = item.toFloat()
+                        savedData[face][index++] = data
+                    }
+                }
+                face++
+            }
+
+        }
+
+    }
+
+
 
     override fun onCreate(bundle: Bundle?) {
         super.onCreate(bundle)
         setContentView(R.layout.activity_camera)
         println("onCreate")
-
+        loadFaceData()
         askPermission()
 
         // private model directory, and models.json file
@@ -273,14 +304,14 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
         val model  = models[id] ?: return true
 //        return model.loadAsync(land_path, net_path) ?: false == true
 
-        if (model.exists(modelDir)) {
+        if (true) {
             // try loading...
             if (currentModelId != id) {
 
                 if (lock.isLocked) // already loading another model
                     return true
 
-                if (model.isCorrupted(modelDir)) {
+                if (false) {
                     model.delete(modelDir)
                     return model.askToUser(this@CameraActivity, modelDir,
                             "Model corrupted",
@@ -294,6 +325,7 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
                     detectorActor.send(Pair(null, null))
 
                     lock.withLock {
+                        model.loadFaces(savedData)
                         val loaded = model.loadAsync(land_path, net_path).await()
 
                         currentModelId = when (loaded) {

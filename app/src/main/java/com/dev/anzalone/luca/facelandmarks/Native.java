@@ -2,6 +2,8 @@ package com.dev.anzalone.luca.facelandmarks;
 
 import android.graphics.Rect;
 
+import java.lang.reflect.Array;
+
 /**
  * Native:  act as an interface between Kotlin and C++
  * Created by Luca on 12/04/2018.
@@ -20,6 +22,7 @@ public final class Native {
 
     /** load the specified landmark model (for dlib) */
     public static native void loadModel(final String path, final  String net);
+    public static native void loadFace(final float[][] data);
     public static native void setImageFormat(final int format);
     private static native long[] detectLandmarks(final byte[] yuv, int rotation, int width, int height, int left, int top, int right, int bottom);
 }
