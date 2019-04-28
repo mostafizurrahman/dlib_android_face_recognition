@@ -1,4 +1,4 @@
-# Android App for Facial Landmark Localization
+# Android App for Face recognition
 An Android Application capable of Recognizing face using localizing a set of facial landmarks trough the frontal camera of the device with pretty-good detection performance.
 
 ## Requires:
