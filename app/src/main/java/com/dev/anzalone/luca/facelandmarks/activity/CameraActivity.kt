@@ -89,8 +89,8 @@ class CameraActivity : Activity(), Camera.PreviewCallback, Camera.FaceDetectionL
         super.onCreate(bundle)
         setContentView(R.layout.activity_camera)
         println("onCreate")
-        loadFaceData()
         askPermission()
+        loadFaceData()
 
         // private model directory, and models.json file
         modelDir = getDir("models", MODE_PRIVATE)
